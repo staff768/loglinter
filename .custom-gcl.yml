@@ -1,0 +1,7 @@
+version: v1.62.0
+
+plugins:
+  - name: 'loglinter'
+    module: 'loglinter'
+    path: '.'
+    import: 'loglinter/plugin'
