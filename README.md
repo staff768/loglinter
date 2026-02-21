@@ -88,6 +88,19 @@ linters-settings:
       type: "module"
       description: "checks log messages for style guide compliance"
 ```
+
+.loglinter.yml (add your custom potential sensitive data)
+```yaml
+keywords:
+  - password
+  - secret
+  - token
+  - api_key
+  - apikey
+  - access_token
+  - passwd
+```
+
 4. Запуск анализа
 
 Запустите проверку вашего кода (например, файла demo.go):
