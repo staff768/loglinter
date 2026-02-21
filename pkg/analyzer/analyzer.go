@@ -21,9 +21,7 @@ var Analyzer = &analysis.Analyzer{
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
 }
 
-var sensitiveKeywords = []string{
-	"password", "secret", "token", "api_key", "apikey", "access_token", "passwd",
-}
+var sensitiveKeywords []string
 
 var supportedLoggers = map[string]map[string]bool{
 	"log/slog": {
@@ -38,6 +36,20 @@ var supportedLoggers = map[string]map[string]bool{
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
+	if sensitiveKeywords == nil {
+		keywords, err := LoadSensitiveKeywords("../../testdata/.loglinter.yml")
+		if err != nil {
+			keywords, err = LoadSensitiveKeywords(".loglinter.yml")
+			if err != nil {
+				sensitiveKeywords = []string{}
+			} else {
+				sensitiveKeywords = keywords
+			}
+		} else {
+			sensitiveKeywords = keywords
+		}
+	}
+
 	inspector := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 	nodeFilter := []ast.Node{(*ast.CallExpr)(nil)}
 

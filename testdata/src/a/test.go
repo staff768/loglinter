@@ -21,5 +21,5 @@ func example() {
 
 	slog.Info("user password: 123") // want "log message contains potential sensitive data.*"
 	slog.Info("api_key is set")     // want "log message contains potential sensitive data.*"
-	
+	slog.Info("testforcustomkeyword is test") // want "log message contains potential sensitive data.*"
 }
