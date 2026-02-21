@@ -101,31 +101,113 @@ func getLogMessageArg(pass *analysis.Pass, call *ast.CallExpr) ast.Expr {
 }
 
 func checkLowerCase(pass *analysis.Pass, node ast.Node, msg string) {
-	firstRune, _ := utf8.DecodeRuneInString(msg)
+	firstRune, size := utf8.DecodeRuneInString(msg)
 	if firstRune != utf8.RuneError && unicode.IsLetter(firstRune) && unicode.IsUpper(firstRune) {
-		pass.Reportf(node.Pos(), "log message should start with a lowercase letter: %q", msg)
+		lit := node.(*ast.BasicLit)
+		pass.Report(analysis.Diagnostic{
+			Pos:     node.Pos(),
+			End:     node.End(),
+			Message: "log message should start with a lowercase letter: '" + msg + "'",
+			SuggestedFixes: []analysis.SuggestedFix{
+				{
+					Message: "replace first letter with lowercase",
+					TextEdits: []analysis.TextEdit{
+						{
+							Pos:     lit.ValuePos + 1, // внутри кавычек
+							End:     lit.ValuePos + 1 + token.Pos(size),
+							NewText: []byte(string(unicode.ToLower(firstRune))),
+						},
+					},
+				},
+			},
+		})
 	}
 }
 
 func checkEnglish(pass *analysis.Pass, node ast.Node, msg string) {
+	lit := node.(*ast.BasicLit)
+	var b strings.Builder
+	changed := false
 	for _, r := range msg {
 		if r > unicode.MaxASCII && unicode.IsLetter(r) {
-			pass.Reportf(node.Pos(), "log message should contain only English words: %q", msg)
-			return
+			changed = true
+			continue
 		}
+		b.WriteRune(r)
+	}
+	if changed {
+		pass.Report(analysis.Diagnostic{
+			Pos:     node.Pos(),
+			End:     node.End(),
+			Message: "log message should contain only English words: '" + msg + "'",
+			SuggestedFixes: []analysis.SuggestedFix{
+				{
+					Message: "remove non-English letters",
+					TextEdits: []analysis.TextEdit{
+						{
+							Pos:     lit.ValuePos + 1,
+							End:     lit.ValuePos + 1 + token.Pos(len(msg)),
+							NewText: []byte(b.String()),
+						},
+					},
+				},
+			},
+		})
 	}
 }
 
 func checkSpecialChars(pass *analysis.Pass, node ast.Node, msg string) {
-	if strings.HasSuffix(msg, ".") || strings.HasSuffix(msg, "!") || strings.HasSuffix(msg, "?") {
-		pass.Reportf(node.Pos(), "log message should not end with punctuation: %q", msg)
+	lit := node.(*ast.BasicLit)
+	fixed := msg
+
+	if strings.HasSuffix(fixed, ".") || strings.HasSuffix(fixed, "!") || strings.HasSuffix(fixed, "?") {
+		fixed = strings.TrimRight(fixed, ".!?")
+		pass.Report(analysis.Diagnostic{
+			Pos:     node.Pos(),
+			End:     node.End(),
+			Message: "log message should not end with punctuation: '" + msg + "'",
+			SuggestedFixes: []analysis.SuggestedFix{
+				{
+					Message: "remove punctuation at end",
+					TextEdits: []analysis.TextEdit{
+						{
+							Pos:     lit.ValuePos + 1 + token.Pos(len(msg)-1),
+							End:     lit.ValuePos + 1 + token.Pos(len(msg)),
+							NewText: []byte(""),
+						},
+					},
+				},
+			},
+		})
 	}
 
-	for _, r := range msg {
+	var b strings.Builder
+	changed := false
+	for _, r := range fixed {
 		if (unicode.Is(unicode.So, r) || unicode.Is(unicode.Sk, r)) && r > unicode.MaxASCII {
-			pass.Reportf(node.Pos(), "log message should not contain emojis or special symbols: %q", msg)
-			return
+			changed = true
+			continue
 		}
+		b.WriteRune(r)
+	}
+	if changed {
+		pass.Report(analysis.Diagnostic{
+			Pos:     node.Pos(),
+			End:     node.End(),
+			Message: "log message should not contain emojis or special symbols: '" + msg + "'",
+			SuggestedFixes: []analysis.SuggestedFix{
+				{
+					Message: "remove emojis/special symbols",
+					TextEdits: []analysis.TextEdit{
+						{
+							Pos:     lit.ValuePos + 1,
+							End:     lit.ValuePos + 1 + token.Pos(len(fixed)),
+							NewText: []byte(b.String()),
+						},
+					},
+				},
+			},
+		})
 	}
 }
 
@@ -133,7 +215,16 @@ func checkSensitiveData(pass *analysis.Pass, node ast.Node, msg string) {
 	lowerMsg := strings.ToLower(msg)
 	for _, kw := range sensitiveKeywords {
 		if strings.Contains(lowerMsg, kw) {
-			pass.Reportf(node.Pos(), "log message contains potential sensitive data (%s): %q", kw, msg)
+			pass.Report(analysis.Diagnostic{
+				Pos:     node.Pos(),
+				End:     node.End(),
+				Message: "log message contains potential sensitive data (" + kw + "): '" + msg + "'",
+				SuggestedFixes: []analysis.SuggestedFix{
+					{
+						Message: "manually remove or redact sensitive data",
+					},
+				},
+			})
 			return
 		}
 	}

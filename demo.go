@@ -9,7 +9,6 @@ func main() {
 	
 	slog.Info("Starting server")      
 	slog.Info("ошибка")
-	slog.Info("testforcustomkeyword- this is a test")               
 	slog.Info("finished.")            
 	slog.Info("done 🚀")              
 	slog.Info("user password: 123")   
