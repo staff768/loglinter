@@ -1,8 +1,14 @@
-keywords:
-  - password
-  - secret
-  - token
-  - api_key
-  - apikey
-  - access_token
-  - passwd
+rules:
+  lowercase: true
+  english_only: true
+  special_chars: false
+  sensitive_data:
+    enabled: true
+    keywords:
+      - password
+      - secret
+      - token
+      - api_key
+      - apikey
+      - access_token
+      - passwd

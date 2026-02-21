@@ -36,19 +36,24 @@ var supportedLoggers = map[string]map[string]bool{
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
-	if sensitiveKeywords == nil {
-		keywords, err := LoadSensitiveKeywords("../../testdata/.loglinter.yml")
+	var config *Config
+	var err error
+	config, err = LoadConfig("../../testdata/.loglinter.yml")
+	if err != nil {
+		config, err = LoadConfig(".loglinter.yml")
 		if err != nil {
-			keywords, err = LoadSensitiveKeywords(".loglinter.yml")
-			if err != nil {
-				sensitiveKeywords = []string{}
-			} else {
-				sensitiveKeywords = keywords
+			config = &Config{
+				Rules: RulesConfig{
+					Lowercase:     true,
+					EnglishOnly:   true,
+					SpecialChars:  true,
+					SensitiveData: SensitiveDataConfig{Enabled: true, Keywords: []string{}},
+				},
 			}
-		} else {
-			sensitiveKeywords = keywords
 		}
 	}
+
+	sensitiveKeywords = config.Rules.SensitiveData.Keywords
 
 	inspector := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 	nodeFilter := []ast.Node{(*ast.CallExpr)(nil)}
@@ -71,13 +76,18 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			return
 		}
 
-		checkLowerCase(pass, lit, msg)
-
-		checkEnglish(pass, lit, msg)
-
-		checkSpecialChars(pass, lit, msg)
-
-		checkSensitiveData(pass, lit, msg)
+		if config.Rules.Lowercase {
+			checkLowerCase(pass, lit, msg)
+		}
+		if config.Rules.EnglishOnly {
+			checkEnglish(pass, lit, msg)
+		}
+		if config.Rules.SpecialChars {
+			checkSpecialChars(pass, lit, msg)
+		}
+		if config.Rules.SensitiveData.Enabled {
+			checkSensitiveData(pass, lit, msg)
+		}
 	})
 
 	return nil, nil
@@ -113,7 +123,7 @@ func checkLowerCase(pass *analysis.Pass, node ast.Node, msg string) {
 					Message: "replace first letter with lowercase",
 					TextEdits: []analysis.TextEdit{
 						{
-							Pos:     lit.ValuePos + 1, // внутри кавычек
+							Pos:     lit.ValuePos + 1,
 							End:     lit.ValuePos + 1 + token.Pos(size),
 							NewText: []byte(string(unicode.ToLower(firstRune))),
 						},

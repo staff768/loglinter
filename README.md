@@ -98,16 +98,22 @@ linters-settings:
       description: "checks log messages for style guide compliance"
 ```
 
-.loglinter.yml (add your custom potential sensitive data)
+.loglinter.yml (add your custom potential sensitive data and choose rules that will be work )
 ```yaml
-keywords:
-  - password
-  - secret
-  - token
-  - api_key
-  - apikey
-  - access_token
-  - passwd
+rules:
+  lowercase: true
+  english_only: true
+  special_chars: false
+  sensitive_data:
+    enabled: true
+    keywords:
+      - password
+      - secret
+      - token
+      - api_key
+      - apikey
+      - access_token
+      - passwd
 ```
 
 4. Запуск анализа

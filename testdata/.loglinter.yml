@@ -1,9 +1,15 @@
-keywords:
-  - password
-  - secret
-  - token
-  - api_key
-  - apikey
-  - access_token
-  - passwd
-  - testforcustomkeyword
+rules:
+  lowercase: true
+  english_only: true
+  special_chars: true
+  sensitive_data:
+    enabled: true
+    keywords:
+      - password
+      - secret
+      - token
+      - api_key
+      - apikey
+      - access_token
+      - passwd
+      - testforcustomkeyword
