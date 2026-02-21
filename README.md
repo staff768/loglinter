@@ -103,7 +103,7 @@ linters-settings:
 rules:
   lowercase: true
   english_only: true
-  special_chars: false
+  special_chars: true
   sensitive_data:
     enabled: true
     keywords:
